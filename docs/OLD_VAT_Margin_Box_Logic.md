@@ -18,6 +18,7 @@ The Margin column is **NOT** based on VAT code. It's purely based on the GL acco
 | 7212 | Consolidator fees costs |
 | 7221 | Mark up on compensation of Intercompany expenses (LV) |
 | 8010 | Turnover Saas One off fees |
+| 8011 | Turnover Saas montly fees |
 | 8020 | Airline incentives Intercompany |
 | 8021 | GDS incentives |
 | 8090 | Platform subscription fee |
@@ -79,8 +80,7 @@ The Box assignment follows this decision tree:
 | **6** (Ticket sales outside EU) | Any | **Nothing** | Outside EU = not taxable in NL |
 | **8** (Ticket Sales within EU) | Margin | **3B** | ICP - margin on EU sales |
 | **8** (Ticket Sales within EU) | No Margin | Nothing | Pass-through turnover |
-| **20** (Ticket sales NL 0%) | Margin | **1E** | NL 0% margin (8xxx GLs) |
-| **20** (Ticket sales NL 0%) | Margin (7212) | Nothing | Exception: 7212 in Q1 |
+| **20** (Ticket sales NL 0%) | Margin | **1E** | NL 0% margin (7xxx/8xxx GLs) |
 | **20** (Ticket sales NL 0%) | No Margin | Nothing | Pass-through |
 | **95** (Ancill services NL) | Margin | **1A** or **1E** | Q1=1E, Q2/Q3=1A |
 | **95** (Ancill services NL) | No Margin | Nothing | |
@@ -90,18 +90,22 @@ The Box assignment follows this decision tree:
 
 ### Purchase VAT Codes (Costs):
 
-| VAT Code | Margin Value | GL Type | Box |
-|----------|--------------|---------|-----|
-| **3** (NL VAT 9%) | NaN | 4xxx/7xxx costs | **5B** |
-| **3** (NL VAT 9%) | NaN | 1xxx balance sheet | Nothing |
-| **4** (NL VAT 21%) | NaN | 4xxx/7xxx costs | **5B** |
-| **4** (NL VAT 21%) | NaN | 1xxx balance sheet | Nothing |
-| **10** (Purchases EU 21%) | Margin | Any | **4B/5B** |
-| **10** (Purchases EU 21%) | NaN | 4xxx costs | **4B/5B** |
-| **10** (Purchases EU 21%) | NaN | 1xxx balance sheet | Nothing |
-| **12** (Purchases outside EU) | NaN | 4xxx costs | **4A/5B** |
-| **12** (Purchases outside EU) | NaN | 1xxx balance sheet | Nothing |
-| **12** (Purchases outside EU) | Margin (8011) | | Nothing |
+The `vat_type` column determines whether a line is a purchase (deductible VAT):
+- `vat_type = "I"` → Input/purchase transaction (VAT is deductible)
+- `vat_type = "O"` or `"P"` → Offset/accrual entries (excluded from VAT return)
+
+| VAT Code | vat_type | GL Condition | Box |
+|----------|----------|--------------|-----|
+| **3** (NL VAT 9%) | I | Any | **5B** |
+| **3** (NL VAT 9%) | O/P | Any | Nothing |
+| **4** (NL VAT 21%) | I | Any | **5B** |
+| **4** (NL VAT 21%) | O/P | Any | Nothing |
+| **10** (Purchases EU 21%) | I | 4xxx/7xxx costs OR 150/160 | **4B, 5B** |
+| **10** (Purchases EU 21%) | I | Other (e.g., 1xxx balance sheet) | Nothing |
+| **10** (Purchases EU 21%) | O/P | Any | Nothing |
+| **12** (Purchases outside EU) | I | 4xxx/7xxx costs OR 150/160 | **4A, 5B** |
+| **12** (Purchases outside EU) | I | Other (e.g., 1xxx balance sheet) | Nothing |
+| **12** (Purchases outside EU) | O/P | Any | Nothing |
 
 ---
 
@@ -112,7 +116,7 @@ The Box assignment follows this decision tree:
 IF GL starts with 81xx AND contains "Markup/Mark up/Class drops/FX/Commission/incentive" → Margin
 IF GL starts with 82xx AND contains "Mark up/FX/Commission" → Margin  
 IF GL = 7212 or 7221 → Margin
-IF GL = 8010, 8020, 8021, 8090, 8091, 8225 → Margin
+IF GL = 8010, 8011, 8020, 8021, 8090, 8091, 8225 → Margin
 IF GL starts with 81xx AND contains "Turnover" → No Margin
 IF GL starts with 82xx AND contains "Turnover" → No Margin
 IF GL starts with 72 AND contains "COGS" → No Margin
@@ -122,39 +126,60 @@ IF GL starts with 1xxx (balance sheet) → blank/NaN
 ```
 
 ### For BOX column:
+
+**Sales VAT Codes (based on Margin):**
 ```
+IF VAT = 2 AND Margin = "Margin" → 1A
+IF VAT = 6 → Nothing (outside EU, never taxable in NL)
 IF VAT = 8 AND Margin = "Margin" → 3B (ICP)
 IF VAT = 8 AND Margin = "No Margin" → Nothing
-IF VAT = 6 → Nothing (outside EU)
-IF VAT = 20 AND Margin = "Margin" AND GL starts with 8 → 1E
-IF VAT = 20 AND Margin = "No Margin" → Nothing
-IF VAT = 2 AND Margin = "Margin" → 1A
-IF VAT = 95 AND Margin = "Margin" → 1A (or 1E in Q1)
-IF VAT = 101 AND Margin = "Margin" → 3B
-IF VAT = 102 → Nothing
-IF VAT = 10 AND GL starts with 4/7 (not 1xxx) → 4B/5B
-IF VAT = 10 AND GL starts with 1 → Nothing
-IF VAT = 12 AND GL starts with 4/7 (not 1xxx) → 4A/5B
-IF VAT = 12 AND GL starts with 1 → Nothing
-IF VAT = 3 or 4 AND GL starts with 4 → 5B
-IF VAT = 3 or 4 AND GL starts with 1 → Nothing
+IF VAT = 20 AND Margin = "Margin" AND GL starts with 7 or 8 → 1E
+IF VAT = 20 AND Margin ≠ "Margin" → Nothing
+IF VAT = 95 AND Margin = "Margin" → 1A (Q2/Q3 2025 convention)
+IF VAT = 100 AND Margin = "Margin" → 1A
+IF VAT = 101 AND Margin = "Margin" → 3B (ICP)
+IF VAT = 102 → Nothing (outside EU)
+```
+
+**Purchase VAT Codes (based on vat_type + GL):**
+```
+vat_type "I" = Input/purchase (VAT deductible)
+vat_type "O"/"P" = Offset/accrual entries (excluded)
+Cost/Asset GL = GL starts with 4 or 7, OR GL = 150 or 160
+
+IF VAT = 3 AND vat_type = "I" → 5B
+IF VAT = 4 AND vat_type = "I" → 5B
+IF VAT = 10 AND vat_type = "I" AND Cost/Asset GL → 4B, 5B
+IF VAT = 12 AND vat_type = "I" AND Cost/Asset GL → 4A, 5B
+All other cases → Nothing
 ```
 
 ---
 
 ## 4. NOTES
 
-1. **VAT Code 95 inconsistency**: Q1 used Box=1E for margin items, but Q2/Q3 switched to Box=1A. This appears to be a correction.
+1. **VAT Code 95 inconsistency**: Q1 used Box=1E for margin items, but Q2/Q3 switched to Box=1A. This appears to be a correction. The implemented logic uses 1A.
 
-2. **Balance sheet accounts** (1xxx series) always get Box=Nothing regardless of VAT code, because they don't belong in the VAT return.
+2. **Balance sheet accounts** (1xxx series) generally get Box=Nothing, because they don't belong in the VAT return. However, GL 150 (Inventory) and GL 160 (Computers) are exceptions—they are fixed assets and do get Box assignment for purchase VAT codes.
 
-3. **7212 with VAT 20 in Q1**: Was Box=Nothing, but in Q2/Q3 it correctly became 1E. This was likely a data entry error in Q1.
+3. **7212 with VAT 20**: GL 7212 (Consolidator fees costs) gets Box=1E when paired with VAT 20 and Margin. The rule applies to both 7xxx and 8xxx Margin accounts.
 
-4. **The key insight**: The Box column represents which line of the Dutch VAT return (BTW-aangifte) the amount should be reported on:
+4. **vat_type column**: For purchase VAT codes (3, 4, 10, 12), the `vat_type` column from the raw data determines whether VAT is deductible:
+   - `vat_type = "I"` (Input) → This is a purchase, VAT is deductible
+   - `vat_type = "O"` or `"P"` (Offset) → Accrual/reversal entry, excluded from VAT return
+
+   This is more reliable than inferring from GL account alone.
+
+5. **Cost/Asset GL definition**: For VAT 10 and 12, even with `vat_type = "I"`, an additional GL check excludes balance sheet items:
+   - GL starting with 4 or 7 → Cost accounts (included)
+   - GL = 150 or 160 → Fixed assets (included)
+   - Other 1xxx → Balance sheet (excluded)
+
+6. **The key insight**: The Box column represents which line of the Dutch VAT return (BTW-aangifte) the amount should be reported on:
    - 1A = Deliveries/services taxed at 21%/9% rate
    - 1E = Deliveries/services taxed at 0% rate
    - 3B = ICP (Intra-Community supplies to EU businesses)
    - 4A = Services purchased from outside EU
    - 4B = Goods purchased from within EU (ICT)
-   - 5A/5B = Input VAT to be deducted
+   - 5B = Input VAT to be deducted
    - Nothing = Not part of VAT return (balance sheet items, pass-through)

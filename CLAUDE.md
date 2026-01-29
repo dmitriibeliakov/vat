@@ -35,7 +35,18 @@ For `financial_period` filtering:
 | `data/Acount ledger.csv` | GL accounts list (Code, DescriptionDescription) |
 | `data/GL accounts classification.csv` | GL account hierarchy (Code, ClassificationDescription) |
 | `data/vat_code_box_icp_lookup.csv` | VAT code to Box/ICP mapping |
+| `data/*_invoicees_overview.csv` | Customer VAT validity lookup |
+| `data/gl_margin_lookup.csv` | GL code to Margin mapping |
 | `docs/vat_code_scheme.md` | VAT code algorithm (source of truth) |
+
+## Critical Business Rules
+
+### ICP and VAT Validity
+- **Only customers with valid EU VAT numbers** qualify for ICP (Box 3B)
+- If VAT is invalid or missing: reclassify from Box 3B → Box 1E
+- **Box 3B total must equal ICP report total** (validation check)
+- VAT validity source: `valid_eu_vat_number` field in invoicees_overview.csv
+- Accounts not found in lookup are treated as invalid (conservative default)
 
 ## Key Documentation
 

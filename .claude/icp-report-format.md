@@ -3,6 +3,27 @@
 ## Overview
 The ICP report (Intra-Community Supply / Opgaaf ICP) is a breakdown of EU B2B sales (Box 3B) by customer, with one row per counterparty showing VAT number and amount.
 
+## Critical Rule: VAT Validity
+
+**IMPORTANT**: Only customers with **valid EU VAT numbers** can be included in the ICP report.
+
+If a customer has an invalid or missing VAT number:
+- Their turnover is **excluded from Box 3B** (and ICP)
+- Their turnover is **reclassified to Box 1E** (0% export services)
+
+This ensures **Box 3B total always equals the ICP report total**.
+
+### VAT Validity Source
+- File: `data/*_invoicees_overview.csv`
+- Key field: `valid_eu_vat_number` (boolean: true/false)
+- Lookup by: `exact_account_code` matching transaction `account_code`
+
+### Accounts Not in Lookup
+If an account is not found in the invoicees lookup:
+- Treat as **invalid VAT** (conservative default)
+- Reclassify their 3B turnover to 1E
+- Log in `invalid_vat_old_*.csv` for review
+
 ## Reference Sample
 `docs/samples/C Teleport BV - ICP Q3 2025 input file.xlsx`
 
