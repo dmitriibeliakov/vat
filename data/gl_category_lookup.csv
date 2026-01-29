@@ -1,0 +1,168 @@
+gl_account_code,category,gl_name
+150,PUR,Inventory
+160,PUR,Computers
+4000,PUR,All operating expenses
+4001,PUR,All operating expenses
+4002,PUR,All operating expenses
+4003,PUR,All operating expenses
+4004,PUR,All operating expenses
+4005,PUR,All operating expenses
+4006,PUR,All operating expenses
+4007,PUR,All operating expenses
+4009,PUR,All operating expenses
+4010,PUR,All operating expenses
+4015,PUR,All operating expenses
+4020,PUR,All operating expenses
+4030,PUR,All operating expenses
+4032,PUR,All operating expenses
+4034,PUR,All operating expenses
+4050,PUR,All operating expenses
+4054,PUR,All operating expenses
+4056,PUR,All operating expenses
+4064,PUR,All operating expenses
+4066,PUR,All operating expenses
+4068,PUR,All operating expenses
+4074,PUR,All operating expenses
+4075,PUR,All operating expenses
+4076,PUR,All operating expenses
+4077,PUR,All operating expenses
+40751,PUR,All operating expenses
+40754,PUR,All operating expenses
+40755,PUR,All operating expenses
+40756,PUR,All operating expenses
+40757,PUR,All operating expenses
+4080,PUR,All operating expenses
+4082,PUR,All operating expenses
+4092,PUR,All operating expenses
+4097,PUR,All operating expenses
+4098,PUR,All operating expenses
+4099,PUR,All operating expenses
+4100,PUR,All operating expenses
+4130,PUR,All operating expenses
+4140,PUR,All operating expenses
+4160,PUR,All operating expenses
+4300,PUR,All operating expenses
+4310,PUR,All operating expenses
+4320,PUR,All operating expenses
+4321,PUR,All operating expenses
+4340,PUR,All operating expenses
+4349,PUR,All operating expenses
+4510,PUR,All operating expenses
+4600,PUR,All operating expenses
+4650,PUR,All operating expenses
+4700,PUR,All operating expenses
+4701,PUR,All operating expenses
+4710,PUR,All operating expenses
+4720,PUR,All operating expenses
+4730,PUR,All operating expenses
+4740,PUR,All operating expenses
+4750,PUR,All operating expenses
+4760,PUR,All operating expenses
+4770,PUR,All operating expenses
+4775,PUR,All operating expenses
+4780,PUR,All operating expenses
+4800,PUR,All operating expenses
+4805,PUR,All operating expenses
+4806,PUR,All operating expenses
+4810,PUR,All operating expenses
+4820,PUR,All operating expenses
+48201,PUR,IT infrastructure
+48202,PUR,IT SaaS Subscriptions
+48203,PUR,IT Software Licenses
+48204,PUR,IT Data feeds
+4821,PUR,All operating expenses
+4822,PUR,All operating expenses
+4823,PUR,All operating expenses
+4824,PUR,All operating expenses
+4825,PUR,All operating expenses
+4826,PUR,All operating expenses
+4827,PUR,All operating expenses
+4828,PUR,All operating expenses
+4829,PUR,All operating expenses
+4830,PUR,All operating expenses
+4831,PUR,All operating expenses
+4835,PUR,All operating expenses
+4840,PUR,All operating expenses
+4850,PUR,All operating expenses
+4852,PUR,All operating expenses
+4853,PUR,All operating expenses
+4854,PUR,All operating expenses
+4856,PUR,All operating expenses
+4857,PUR,All operating expenses
+4858,PUR,All operating expenses
+4859,PUR,All operating expenses
+4860,PUR,All operating expenses
+4868,PUR,All operating expenses
+4869,PUR,All operating expenses
+4875,PUR,All operating expenses
+4876,PUR,All operating expenses
+4885,PUR,All operating expenses
+7211,PAS,Cost of Goods Turnover (0%)
+7212,PAS,Consolidator fees costs
+72114,PAS,COGS IATA accounts
+72115,PAS,COGS IATA accounts
+72116,PAS,COGS IATA accounts
+72117,PAS,COGS IATA accounts
+72118,PAS,COGS IATA accounts
+72119,PAS,COGS IATA accounts
+72141,PAS,COGS IATA accounts
+72142,PAS,COGS IATA accounts
+72143,PAS,COGS IATA accounts
+72144,PAS,COGS IATA accounts
+72145,PAS,COGS IATA accounts
+72146,PAS,COGS IATA accounts
+72147,PAS,COGS IATA accounts
+72148,PAS,COGS IATA accounts
+72149,PAS,COGS IATA accounts
+7220,PUR,Compensation of Intercompany expenses
+7221,PUR,Mark up on compensation Intercompany (LV)
+7223,PUR,Incidentals errors ADM penalties
+8010,NFT,Turnover SaaS One off
+8011,NFT,Turnover SaaS monthly
+80134,FLT,IATA Commission TKTT NL
+8020,FLT,Airline incentives Intercompany
+8021,FLT,GDS incentives
+8090,NFT,Platform subscription fee
+8091,NFT,Minimum booking fee
+8100,FLT,Markup Marine
+8101,FLT,Markup Corporate
+8102,PAS,Turnover Tickets Marine
+8103,PAS,Turnover Tickets Corporate
+8104,FLT,Class drops Marine
+8105,FLT,Class drops Corporate
+8106,FXE,FX markup
+8107,FLT,Consolidator markup
+8108,PAS,Amex Credit card costs
+8110,FLT,GDS incentive compensation markup
+8112,PAS,Ecommpay fees
+8113,PAS,Ecommpay fees
+8114,PAS,Ecommpay fees
+8115,PAS,Turnover hotels
+81134,FLT,IATA Commission TKTT LV
+8201,PAS,Turnover ancillary services NL
+8202,NFT,Mark up ancillary services NL
+8203,FXE,FX markup ancillary
+8205,NFT,Commissions ancillary services
+8206,NFT,Commission Hotels (online)
+8211,PAS,Turnover ancillary services EU
+8212,NFT,Mark up ancillary services EU
+8213,FXE,FX markup ancillary services EU
+8221,PAS,Turnover ancillary services outside EU
+8222,NFT,Mark up ancillary services outside EU
+8223,FXE,FX markup ancillary services outside EU
+8225,NFT,Extra baggage
+8229,REF,Tax refund
+40752,PUR,Outsourced personnel - Finance Team
+72111,PAS,COGS_IATA_ACMA_NL
+72112,PAS,COGS_IATA_ADMA_NL
+7216,PAS,Cost of goods ancillary services NL
+7217,PAS,Cost of goods ancillary services Within EU
+7218,PAS,Cost of goods ancillary services outside EU
+7219,PAS,Cost of goods ancillary services accruals
+8002,FLT,Moss cashback
+80133,FLT,Commission RFND NL
+81131,FLT,IATA Commission ADMA LV
+81133,FLT,IATA Commission RFND LV
+8204,PAS,Payment method fees ancillary services NL
+8214,PAS,Payment method fees ancillary services EU
+8224,PAS,Payment method fees ancillary services outside EU

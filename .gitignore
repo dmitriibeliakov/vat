@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+.venv
+.pytest_cache/
+
+# Environment variables
+.env
+.env.local
+
+# IDE
+.vscode/
+.idea/
+.cursor/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Generated outputs
+tmp/
+
+# Large transaction data files (100+ MB exports)
+# Keep these out of version control - download fresh from Redshift
+*_transaction_lines_*.csv
+
+# Data exports that may contain sensitive customer info
+data/*_invoicees_*.csv
+data/*_overview.csv

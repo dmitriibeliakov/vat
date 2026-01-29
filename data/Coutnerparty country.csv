@@ -1,0 +1,252 @@
+Code,Full name,Rabobank risk category,Is EU
+Unknown,Unknown country,High,FALSE
+AF,Afghanistan,High,FALSE
+AX,Åland Islands,High,FALSE
+AL,Albania,High,FALSE
+DZ,Algeria,High,FALSE
+AS,American Samoa,High,FALSE
+AD,Andorra,Low,FALSE
+AO,Angola,High,FALSE
+AI,Anguilla,High,FALSE
+AQ,Antarctica,High,FALSE
+AG,Antigua and Barbuda,High,FALSE
+AR,Argentina,High,FALSE
+AM,Armenia,High,FALSE
+AW,Aruba,Medium,FALSE
+AU,Australia,Low,FALSE
+AT,Austria,Low,TRUE
+AZ,Azerbaijan,High,FALSE
+BS,Bahamas,Medium,FALSE
+BH,Bahrain,High,FALSE
+BD,Bangladesh,High,FALSE
+BB,Barbados,High,FALSE
+BY,Belarus,High,FALSE
+BE,Belgium,Low,TRUE
+BZ,Belize,High,FALSE
+BJ,Benin,High,FALSE
+BM,Bermuda,Low,FALSE
+BT,Bhutan,High,FALSE
+BO,Bolivia (Plurinational State of),High,FALSE
+BQ,"Bonaire, Sint Eustatius and Saba",Medium,FALSE
+BA,Bosnia and Herzegovina,High,FALSE
+BW,Botswana,High,FALSE
+BV,Bouvet Island,High,FALSE
+BR,Brazil,Medium,FALSE
+IO,British Indian Ocean Territory,Low,FALSE
+BN,Brunei Darussalam,Low,FALSE
+BG,Bulgaria,Medium,TRUE
+BF,Burkina Faso,High,FALSE
+BI,Burundi,High,FALSE
+CV,Cabo Verde,High,FALSE
+KH,Cambodia,High,FALSE
+CM,Cameroon,High,FALSE
+CA,Canada,Low,FALSE
+KY,Cayman Islands,Low,FALSE
+CF,Central African Republic,High,FALSE
+TD,Chad,High,FALSE
+CL,Chile,Low,FALSE
+CN,China,Medium,FALSE
+CX,Christmas Island,High,FALSE
+CC,Cocos (Keeling) Islands,High,FALSE
+CO,Colombia,Medium,FALSE
+KM,Comoros,High,FALSE
+CG,Congo,High,FALSE
+CD,"Congo, Democratic Republic of the",High,FALSE
+CK,Cook Islands,High,FALSE
+CR,Costa Rica,Medium,FALSE
+CI,Côte d'Ivoire,High,FALSE
+HR,Croatia,Medium,TRUE
+CU,Cuba,High,FALSE
+CW,Curaçao,High,FALSE
+CY,Cyprus,Medium,TRUE
+CZ,Czechia,Low,TRUE
+DK,Denmark,Low,TRUE
+DJ,Djibouti,High,FALSE
+DM,Dominica,High,FALSE
+DO,Dominican Republic,Medium,FALSE
+EC,Ecuador,High,FALSE
+EG,Egypt,High,FALSE
+SV,El Salvador,Medium,FALSE
+GQ,Equatorial Guinea,High,FALSE
+ER,Eritrea,High,FALSE
+EE,Estonia,Low,TRUE
+SZ,Eswatini,High,FALSE
+ET,Ethiopia,High,FALSE
+FK,Falkland Islands (Malvinas),High,FALSE
+FO,Faroe Islands,Low,FALSE
+FJ,Fiji,High,FALSE
+FI,Finland,Low,TRUE
+FR,France,Low,TRUE
+GF,French Guiana,High,FALSE
+PF,French Polynesia,High,FALSE
+TF,French Southern Territories,High,FALSE
+GA,Gabon,High,FALSE
+GM,Gambia,High,FALSE
+GE,Georgia,High,FALSE
+DE,Germany,Low,TRUE
+GH,Ghana,High,FALSE
+GI,Gibraltar,Low,FALSE
+GR,Greece,High,TRUE
+GL,Greenland,Low,FALSE
+GD,Grenada,High,FALSE
+GP,Guadeloupe,Low,FALSE
+GU,Guam,High,FALSE
+GT,Guatemala,Medium,FALSE
+GG,Guernsey,Low,FALSE
+GN,Guinea,High,FALSE
+GW,Guinea-Bissau,High,FALSE
+GY,Guyana,High,FALSE
+HT,Haiti,High,FALSE
+HM,Heard Island and McDonald Islands,High,FALSE
+VA,Holy See,Low,FALSE
+HN,Honduras,High,FALSE
+HK,Hong Kong,Medium,FALSE
+HU,Hungary,Medium,TRUE
+IS,Iceland,Low,FALSE
+IN,India,Medium,FALSE
+ID,Indonesia,Medium,FALSE
+IR,Iran (Islamic Republic of),High,FALSE
+IQ,Iraq,High,FALSE
+IE,Ireland,Low,TRUE
+IM,Isle of Man,Low,FALSE
+IL,Israel,Medium,FALSE
+IT,Italy,Medium,TRUE
+JM,Jamaica,High,FALSE
+JP,Japan,Low,FALSE
+JE,Jersey,Low,FALSE
+JO,Jordan,High,FALSE
+KZ,Kazakhstan,High,FALSE
+KE,Kenya,High,FALSE
+KI,Kiribati,High,FALSE
+KP,Korea (Democratic People's Republic of),High,FALSE
+KR,"Korea, Republic of",Low,FALSE
+KW,Kuwait,Medium,FALSE
+KG,Kyrgyzstan,High,FALSE
+LA,Lao People's Democratic Republic,High,FALSE
+LV,Latvia,Medium,TRUE
+LB,Lebanon,High,FALSE
+LS,Lesotho,High,FALSE
+LR,Liberia,High,FALSE
+LY,Libya,High,FALSE
+LI,Liechtenstein,Low,FALSE
+LT,Lithuania,Low,TRUE
+LU,Luxembourg,Low,TRUE
+MO,Macao,Medium,FALSE
+MG,Madagascar,High,FALSE
+MW,Malawi,High,FALSE
+MY,Malaysia,Medium,FALSE
+MV,Maldives,High,FALSE
+ML,Mali,High,FALSE
+MT,Malta,Low,TRUE
+MH,Marshall Islands,High,FALSE
+MQ,Martinique,Low,FALSE
+MR,Mauritania,High,FALSE
+MU,Mauritius,Medium,FALSE
+YT,Mayotte,High,FALSE
+MX,Mexico,Medium,FALSE
+FM,Micronesia (Federated States of),High,FALSE
+MD,"Moldova, Republic of",High,FALSE
+MC,Monaco,Low,FALSE
+MN,Mongolia,High,FALSE
+ME,Montenegro,High,FALSE
+MS,Montserrat,High,FALSE
+MA,Morocco,High,FALSE
+MZ,Mozambique,High,FALSE
+MM,Myanmar,High,FALSE
+NA,Namibia,High,FALSE
+NR,Nauru,High,FALSE
+NP,Nepal,High,FALSE
+NL,Netherlands,Low,TRUE
+NC,New Caledonia,Low,FALSE
+NZ,New Zealand,Low,FALSE
+NI,Nicaragua,High,FALSE
+NE,Niger,High,FALSE
+NG,Nigeria,High,FALSE
+NU,Niue,High,FALSE
+NF,Norfolk Island,High,FALSE
+MK,North Macedonia,High,FALSE
+MP,Northern Mariana Islands,High,FALSE
+NO,Norway,Low,FALSE
+OM,Oman,Medium,FALSE
+PK,Pakistan,High,FALSE
+PW,Palau,High,FALSE
+PS,"Palestine, State of",High,FALSE
+PA,Panama,Medium,FALSE
+PG,Papua New Guinea,High,FALSE
+PY,Paraguay,High,FALSE
+PE,Peru,Medium,FALSE
+PH,Philippines,Medium,FALSE
+PN,Pitcairn,High,FALSE
+PL,Poland,Low,TRUE
+PT,Portugal,Medium,TRUE
+PR,Puerto Rico,High,FALSE
+QA,Qatar,Medium,FALSE
+RE,Réunion,Low,FALSE
+RO,Romania,Medium,TRUE
+RU,Russian Federation,High,FALSE
+RW,Rwanda,High,FALSE
+BL,Saint Barthélemy,High,FALSE
+SH,"Saint Helena, Ascension and Tristan da Cunha",High,FALSE
+KN,Saint Kitts and Nevis,High,FALSE
+LC,Saint Lucia,High,FALSE
+MF,Saint Martin (French part),High,FALSE
+PM,Saint Pierre and Miquelon,Low,FALSE
+VC,Saint Vincent and the Grenadines,High,FALSE
+WS,Samoa,High,FALSE
+SM,San Marino,Medium,FALSE
+ST,Sao Tome and Principe,High,FALSE
+SA,Saudi Arabia,Medium,FALSE
+SN,Senegal,High,FALSE
+RS,Serbia,Medium,FALSE
+SC,Seychelles,High,FALSE
+SL,Sierra Leone,High,FALSE
+SG,Singapore,Low,FALSE
+SX,Sint Maarten (Dutch part),High,FALSE
+SK,Slovakia,Low,TRUE
+SI,Slovenia,Medium,TRUE
+SB,Solomon Islands,High,FALSE
+SO,Somalia,High,FALSE
+ZA,South Africa,Medium,FALSE
+GS,South Georgia and the South Sandwich Islands,High,FALSE
+SS,South Sudan,High,FALSE
+ES,Spain,Low,TRUE
+LK,Sri Lanka,High,FALSE
+SD,Sudan,High,FALSE
+SR,Suriname,High,FALSE
+SJ,Svalbard and Jan Mayen,High,FALSE
+SE,Sweden,Low,TRUE
+CH,Switzerland,Low,FALSE
+SY,Syrian Arab Republic,High,FALSE
+TW,"Taiwan, Province of China",Low,FALSE
+TJ,Tajikistan,Medium,FALSE
+TZ,"Tanzania, United Republic of",High,FALSE
+TH,Thailand,High,FALSE
+TL,Timor-Leste,High,FALSE
+TG,Togo,High,FALSE
+TK,Tokelau,High,FALSE
+TO,Tonga,High,FALSE
+TT,Trinidad and Tobago,Medium,FALSE
+TN,Tunisia,High,FALSE
+TR,Turkey,High,FALSE
+TM,Turkmenistan,High,FALSE
+TC,Turks and Caicos Islands,High,FALSE
+TV,Tuvalu,High,FALSE
+UG,Uganda,High,FALSE
+UA,Ukraine,High,FALSE
+AE,United Arab Emirates,Low,FALSE
+GB,United Kingdom of Great Britain and Northern Ireland,Low,FALSE
+US,United States of America,Low,FALSE
+UM,United States Minor Outlying Islands,High,FALSE
+UY,Uruguay,Medium,FALSE
+UZ,Uzbekistan,High,FALSE
+VU,Vanuatu,High,FALSE
+VE,Venezuela (Bolivarian Republic of),High,FALSE
+VN,Viet Nam,Medium,FALSE
+VG,Virgin Islands (British),Low,FALSE
+VI,Virgin Islands (U.S.),High,FALSE
+WF,Wallis and Futuna,High,FALSE
+EH,Western Sahara,High,FALSE
+YE,Yemen,High,FALSE
+ZM,Zambia,High,FALSE
+ZW,Zimbabwe,High,FALSE
+XK,Kosovo,High,FALSE
