@@ -1,0 +1,36 @@
+gl_code,gl_description,margin
+7212,Consolidator fees costs,Margin
+7221,Mark up on compensation of Intercompany expenses (LV),Margin
+8010,Turnover Saas One off fees,Margin
+8011,Turnover Saas montly fees,Margin
+8020,Airline incentives Intercompany,Margin
+8021,GDS incentives,Margin
+8090,Platform subscription fee,Margin
+8091,Minimum booking fee,Margin
+8100,Markup Marine,Margin
+8101,Markup Corporate,Margin
+8104,Class drops Marine,Margin
+8105,Class drops Corporate,Margin
+8106,FX markup,Margin
+8107,Consolidator markup,Margin
+8110,GDS incentive compensation markup,Margin
+8202,Mark up ancillary services NL Corporate,Margin
+8203,FX markup ancillary services NL Corporate,Margin
+8205,Commissions ancillary services NL Corporate,Margin
+8206,Commission Hotels (online),Margin
+8212,Mark up ancillary services EU Corporate,Margin
+8213,FX markup ancillary services EU Corporate,Margin
+8222,Mark up ancillary services outside EU Corporate,Margin
+8223,FX markup ancillary services outside EU Corporate,Margin
+8225,Extra baggage,Margin
+7211,Cost of Goods Turnover (0%),No Margin
+72114,COGS_IATA_EMDA_NL,No Margin
+72115,COGS_IATA_EMDS_NL,No Margin
+72116,COGS_IATA_RFND_NL,No Margin
+72119,COGS_IATA_TKTT_NL,No Margin
+8102,Turnover Tickets Marine,No Margin
+8103,Turnover Tickets Corporate,No Margin
+8115,Turnover hotels,No Margin
+8201,Turnover ancillary services NL Corporate,No Margin
+8211,Turnover ancillary services EU Corporate,No Margin
+8221,Turnover ancillary services outside EU Corporate,No Margin
