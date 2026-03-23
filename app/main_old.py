@@ -567,14 +567,12 @@ def build_vat_declaration(pivot: pd.DataFrame) -> pd.DataFrame:
         .reset_index()
     )
 
-    # Calculate VAT amount (21% for 1A, 4A, 4B; 0% for others)
+    # Calculate VAT amount (21% for all boxes ending in A or B)
     def calc_vat(row):
         box = row["Box"]
         turnover = row["Turnover"]
-        if box in ("1A", "4A", "4B", "5B"):
-            # For 1A: VAT on margin (21% of turnover)
-            # For 4A, 4B: reverse charge (21% of turnover)
-            # For 5B: deductible VAT (21% of turnover)
+        # Check if box ends with 'A' or 'B'
+        if box and (box.endswith("A") or box.endswith("B")):
             return round(abs(turnover) * 0.21, 2)
         return 0.0
 
@@ -583,10 +581,60 @@ def build_vat_declaration(pivot: pd.DataFrame) -> pd.DataFrame:
     # Round turnover
     agg["Turnover"] = agg["Turnover"].round(0).astype(int)
 
+    # Negate signs for revenue boxes (1A, 1E, 3B) to show positive amounts
+    revenue_boxes = ["1A", "1E", "3B"]
+    agg.loc[agg["Box"].isin(revenue_boxes), "Turnover"] = -agg.loc[agg["Box"].isin(revenue_boxes), "Turnover"]
+
+    # Add 5B Pre-tax row: sum of all boxes containing 4A, 4B, or 5B (including combinations)
+    # This captures "4A", "4B", "5B", "4A, 5B", "4B, 5B", etc.
+    pretax_rows = agg[agg["Box"].str.contains("4A|4B|5B", regex=True, na=False)]
+    if not pretax_rows.empty:
+        pretax_turnover = pretax_rows["Turnover"].sum()
+        pretax_vat = round(abs(pretax_turnover) * 0.21, 2)
+        pretax_row = pd.DataFrame([{
+            "Box": "5B Pre-tax",
+            "Turnover": pretax_turnover,
+            "VAT_amount": pretax_vat
+        }])
+        agg = pd.concat([agg, pretax_row], ignore_index=True)
+
     # Sort by Box
     agg = agg.sort_values("Box").reset_index(drop=True)
 
     return agg[output_columns]
+
+
+def extract_quarter_year(filename: str) -> tuple[str, str]:
+    """
+    Extract quarter and year from filename.
+    Expects format like: 20260129_transaction_lines_Q3.csv
+    Returns: (quarter, year) e.g., ("Q3", "25")
+
+    Note: Files dated 2026 contain 2025 data (created in 2026 for previous year).
+    """
+    import re
+
+    # Try to find Q1, Q2, Q3, Q4 in filename
+    quarter_match = re.search(r'[_\s]Q([1-4])', filename, re.IGNORECASE)
+    if quarter_match:
+        quarter = f"Q{quarter_match.group(1)}"
+    else:
+        quarter = "Q1"  # Default
+
+    # For files dated 2026, data is from 2025
+    # For files dated 2025, data is from 2025
+    year_match = re.match(r'(\d{4})', filename)
+    if year_match:
+        full_year = year_match.group(1)
+        # If file is dated 2026, it contains 2025 data
+        if full_year == "2026":
+            year = "25"
+        else:
+            year = full_year[2:]
+    else:
+        year = "25"  # Default to 2025
+
+    return quarter, year
 
 
 def main() -> int:
@@ -625,6 +673,12 @@ def main() -> int:
         default=DEFAULT_TMP_DIR,
         help="Directory for output CSV (default: tmp/)",
     )
+    parser.add_argument(
+        "--output-dir",
+        type=Path,
+        default=Path("output"),
+        help="Directory for final XLSX reports (default: output/)",
+    )
     args = parser.parse_args()
 
     input_path = args.input_csv
@@ -658,16 +712,20 @@ def main() -> int:
 
     # Setup output paths
     args.tmp_dir.mkdir(parents=True, exist_ok=True)
+    args.output_dir.mkdir(parents=True, exist_ok=True)
     stem = input_path.stem
+
+    # Extract quarter and year from filename
+    quarter, year = extract_quarter_year(input_path.name)
 
     if args.output is not None:
         pivot_path = args.output
     else:
-        pivot_path = args.tmp_dir / f"vat_pivot_old_{stem}.csv"
+        pivot_path = args.output_dir / f"VAT transaction lines {quarter}'{year}.xlsx"
 
-    icp_path = args.tmp_dir / f"icp_old_{stem}.csv"
+    icp_path = args.output_dir / f"ICP {quarter}'{year}.xlsx"
     invalid_vat_path = args.tmp_dir / f"invalid_vat_old_{stem}.csv"
-    declaration_path = args.tmp_dir / f"vat_declaration_old_{stem}.csv"
+    declaration_path = args.output_dir / f"VAT final report {quarter}'{year}.xlsx"
 
     # Load and filter transactions
     try:
@@ -681,13 +739,13 @@ def main() -> int:
     # Build pivot with VAT validity handling
     pivot, enriched_df = build_pivot(df, margin_lookup, vat_lookup)
 
-    # Save pivot
-    pivot.to_csv(pivot_path, index=False)
+    # Save pivot as XLSX
+    pivot.to_excel(pivot_path, index=False, engine='openpyxl')
     print(f"VAT pivot: {len(pivot)} rows → {pivot_path}")
 
-    # Build and save ICP report
+    # Build and save ICP report as XLSX
     icp_report = build_icp_report(enriched_df, vat_lookup)
-    icp_report.to_csv(icp_path, index=False)
+    icp_report.to_excel(icp_path, index=False, engine='openpyxl')
     print(f"ICP report: {len(icp_report)} customers → {icp_path}")
 
     # Build and save invalid VAT report
@@ -699,12 +757,13 @@ def main() -> int:
     else:
         print(f"Invalid VAT report: no reclassifications → {invalid_vat_path}")
 
-    # Build and save VAT declaration
+    # Build and save VAT declaration as XLSX
     declaration = build_vat_declaration(pivot)
-    declaration.to_csv(declaration_path, index=False)
+    declaration.to_excel(declaration_path, index=False, engine='openpyxl')
     print(f"VAT declaration: {len(declaration)} boxes → {declaration_path}")
 
     # Validation: ICP total should match Box 3B
+    # Note: ICP amounts are negative (revenue), Box 3B turnover is now positive (negated for display)
     icp_total = icp_report["Amount"].sum() if not icp_report.empty else 0
     box_3b_row = declaration[declaration["Box"] == "3B"]
     box_3b_total = box_3b_row["Turnover"].iloc[0] if not box_3b_row.empty else 0
@@ -712,10 +771,11 @@ def main() -> int:
     print(f"\n=== Validation ===")
     print(f"ICP total (sum of Amount): {icp_total:.2f}")
     print(f"Box 3B turnover: {box_3b_total}")
-    if abs(round(icp_total) - box_3b_total) <= 1:
+    # Compare absolute values since signs were negated in declaration
+    if abs(abs(round(icp_total)) - abs(box_3b_total)) <= 1:
         print("✓ ICP matches Box 3B")
     else:
-        print(f"⚠ ICP vs Box 3B difference: {round(icp_total) - box_3b_total}")
+        print(f"⚠ ICP vs Box 3B difference: {abs(round(icp_total)) - abs(box_3b_total)}")
 
     return 0
 

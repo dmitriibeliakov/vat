@@ -18,11 +18,11 @@ The **Treatment** (21%, 0%, RC, OOS, EXM) is automatically derived from Category
 ```mermaid
 flowchart LR
     GL[GL Code] --> CAT[Category]
-    CC[Customer Country] --> GEO_CHECK{Geography}
+    CC[Customer VAT Country] --> GEO_CHECK{Geography}
     VAT_VALID[VAT Number Valid?] --> GEO_CHECK
     CAT --> VAT_CODE[VAT Code]
     GEO_CHECK --> VAT_CODE
-    VAT_CODE --> TRT[Treatment]
+    VAT_CODE --> TRT[Treatment in Exact]
 ```
 
 ---
@@ -35,7 +35,7 @@ Format: `[Category]-[Geography]`
 
 | Code | Category | Description |
 |------|----------|-------------|
-| **FLT** | Flights | Flight intermediation margin |
+| **FLT** | Flights | All sorts of margins and markups on flights |
 | **NFT** | Non-Flights | Hotels, trains, SaaS, platform, whitelabel margin |
 | **FXE** | FX/Exempt | Currency/FX markup (exempt financial service) |
 | **PAS** | Pass-through | GMV, COGS, CC fees - no margin |
@@ -46,9 +46,9 @@ Format: `[Category]-[Geography]`
 
 | Code | Geography | Description |
 |------|-----------|-------------|
-| **NL** | Netherlands | Dutch customer/supplier |
-| **EU** | EU (excl. NL) | EU customer/supplier with valid VAT number |
-| **EX** | EU no VAT | EU customer without valid VAT number |
+| **NL** | Netherlands | Dutch customer/supplier - with VAT or with (error: without?) one |
+| **EU** | EU (excl. NL) | non-NL EU customer/supplier with valid VAT number |
+| **EX** | non-NL EU no VAT | non-NL EU customer without valid VAT number |
 | **XX** | Non-EU | Customer/supplier outside EU |
 
 ---
@@ -199,3 +199,4 @@ Given Category + Geography, the Treatment is automatically determined:
 **Filter**: VAT Code = `NFT-EU`
 
 **Validation**: Box 3B total = ICP total
+

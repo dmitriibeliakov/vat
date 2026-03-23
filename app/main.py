@@ -304,39 +304,44 @@ def run(
         out_df.to_csv(tmp_dir / "transactions_with_vat_code.csv", index=False)
 
     # ICP report pivot: filter by lookup ICP=TRUE (Box 3B counterparties)
+    # Aggregate by VAT number (must be unique in ICP report)
     country_full_names = _load_country_full_names(country_path)
     icp_mask = out_df["derived_vat_code"].map(lambda c: vat_code_to_icp.get((c or "").strip(), False))
-    icp_tx = out_df.loc[icp_mask]
+    icp_tx = out_df.loc[icp_mask].copy()
+    icp_total = 0.0
     if (
         not icp_tx.empty
         and "amount_dc_numeric" in out_df.columns
     ):
+        # Map VAT number and country onto transactions before aggregation
+        acc_to_vat = counterparties_df.set_index("company")["vat_number"].to_dict()
+        acc_to_country_code = counterparties_df.set_index("company")["country"].to_dict()
+        icp_tx["vat_number"] = icp_tx["account_code_trimmed"].map(
+            lambda c: acc_to_vat.get(c, "n/a") if pd.notna(c) else "n/a"
+        ).fillna("n/a").astype(str)
+        icp_tx["country_code"] = icp_tx["account_code_trimmed"].map(
+            lambda c: acc_to_country_code.get(c, "") if pd.notna(c) else ""
+        ).fillna("").astype(str)
+
+        # Aggregate by VAT number (unique requirement for ICP reports)
         icp_agg = (
-            icp_tx.groupby("account_code_trimmed", dropna=False)
+            icp_tx.groupby("vat_number", dropna=False)
             .agg(
                 Amount=("amount_dc_numeric", "sum"),
                 company_name=("company_name", "first"),
+                account_code=("account_code_trimmed", "first"),
+                country_code=("country_code", "first"),
             )
             .reset_index()
-            .rename(columns={"account_code_trimmed": "Code", "company_name": "Name"})
+            .rename(columns={"vat_number": "Vat number", "company_name": "Name", "account_code": "Code"})
         )
-        # Enrich with vat_number and country from counterparties
-        acc_to_vat = counterparties_df.set_index("company")["vat_number"].to_dict()
-        acc_to_country_code = counterparties_df.set_index("company")["country"].to_dict()
-        icp_agg["Vat number"] = icp_agg["Code"].map(
-            lambda c: acc_to_vat.get(c, "n/a") if pd.notna(c) else "n/a"
-        )
-        icp_agg["Vat number"] = icp_agg["Vat number"].fillna("n/a").astype(str)
-        icp_agg["Country"] = icp_agg["Code"].map(
-            lambda c: country_full_names.get(
-                (acc_to_country_code.get(c) or "").strip(), (acc_to_country_code.get(c) or "")
-            )
-            if pd.notna(c)
-            else ""
+        icp_agg["Country"] = icp_agg["country_code"].map(
+            lambda c: country_full_names.get(c.strip(), c) if c else ""
         )
         icp_agg["Round"] = icp_agg["Amount"].round(0).astype("int64")
         icp_agg["Name"] = icp_agg["Name"].fillna("")
         icp_agg["Country"] = icp_agg["Country"].fillna("")
+        icp_total = icp_agg["Amount"].sum()
         icp_agg = icp_agg[["Code", "Name", "Amount", "Round", "Vat number", "Country"]]
         icp_agg = icp_agg.sort_values(by=["Country", "Name"], na_position="last")
         icp_agg.to_csv(tmp_dir / "icp_report_pivot.csv", index=False)
@@ -346,6 +351,7 @@ def run(
         ).to_csv(tmp_dir / "icp_report_pivot.csv", index=False)
 
     # VAT report pivot: group by Box, Vat code, GL account (code + name concatenated)
+    box_3b_total = 0.0
     if not out_df.empty and "amount_dc_numeric" in out_df.columns:
         box_code_gl_amounts: list[tuple[str, str, str, float]] = []
         for _, row in out_df.iterrows():
@@ -367,6 +373,8 @@ def run(
             )
             vat_pivot_df = vat_pivot_df.sort_values(["Box", "Vat code", "GL_account"])
             vat_pivot_df.to_csv(tmp_dir / "vat_report_pivot.csv", index=False)
+            # Calculate Box 3B total for validation
+            box_3b_total = vat_pivot_df.loc[vat_pivot_df["Box"] == "3B", "Sum_amount"].sum()
         else:
             pd.DataFrame(
                 columns=["Box", "Vat code", "GL_account", "Sum_amount", "transaction_count"]
@@ -375,6 +383,16 @@ def run(
         pd.DataFrame(
             columns=["Box", "Vat code", "GL_account", "Sum_amount", "transaction_count"]
         ).to_csv(tmp_dir / "vat_report_pivot.csv", index=False)
+
+    # Validation: Box 3B total must equal ICP report total
+    if abs(box_3b_total - icp_total) > 0.01:
+        print(
+            f"WARNING: Box 3B total ({box_3b_total:,.2f}) does not match ICP report total ({icp_total:,.2f}). "
+            f"Difference: {box_3b_total - icp_total:,.2f}",
+            file=sys.stderr,
+        )
+    else:
+        print(f"Validation passed: Box 3B total ({box_3b_total:,.2f}) equals ICP report total ({icp_total:,.2f})")
 
 
 def main() -> None:
