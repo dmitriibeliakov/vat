@@ -6,7 +6,7 @@ The VAT report is a **pivot table** of `tmp/transactions_with_vat_code.csv`, agg
 ## Source Files
 | File | Purpose |
 |------|---------|
-| `docs/vat_code_scheme.md` | VAT code scheme definition |
+| `docs/scheme/vat_code_scheme_temporary.md` | VAT code scheme definition |
 | `data/vat_code_box_icp_lookup.csv` | VAT code to Box/ICP mapping |
 | `tmp/transactions_with_vat_code.csv` | Input transactions with derived codes |
 

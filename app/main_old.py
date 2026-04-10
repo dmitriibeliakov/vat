@@ -167,7 +167,7 @@ def get_box(vat_code: str, margin: str, gl_code: str, vat_type: str = "") -> str
     """
     Determine Box for a transaction based on VAT code, Margin, GL type, and VAT type.
 
-    Logic from docs/OLD_VAT_Margin_Box_Logic.md and PRD.
+    Logic from docs/legacy/OLD_VAT_Margin_Box_Logic.md and PRD.
     vat_type "I" = Input/purchase (VAT deductible), used for Box 5B determination.
     """
     vc = _normalize_vat_code(vat_code)

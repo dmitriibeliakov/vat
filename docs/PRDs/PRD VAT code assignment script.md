@@ -24,7 +24,7 @@ All temporary files are written to the `tmp/` directory. The script does not con
 | Input | Description | Location |
 |-------|-------------|----------|
 | Transaction lines CSV | Raw export from Redshift `transaction_lines` (e.g. quarter export). | Passed as argument (e.g. `YYYYMMDD_transaction_lines_Q4.csv`). |
-| GL category lookup | One row per GL code → category (FLT, NFT, FXE, PAS, REF, PUR). | `data/gl_category_lookup.csv` (created once from `docs/vat_code_scheme.md`). |
+| GL category lookup | One row per GL code → category (FLT, NFT, FXE, PAS, REF, PUR). | `data/gl_category_lookup.csv` (created once from `docs/scheme/vat_code_scheme_temporary.md`). |
 | Invoicees overview | Customers with country, VAT number, validity. | `data/20260129_invoicees_overview.csv` (or dated equivalent). |
 | Counterparty country | Country code → Is EU. | `data/Coutnerparty country.csv` |
 
@@ -95,7 +95,7 @@ Produce two temporary CSVs, both sorted by GL account number.
 ## 6. Step 4: Transactions + Category + Geography + VAT Code (Temporary File)
 
 - **Input:** Transactions that have an assigned **Category** from Step 1, and counterparty **Geography** from Step 3 (keyed by trimmed `account_code`).
-- **Logic:** For each such transaction, derive VAT code and treatment from Category + Geography using the rules in `docs/vat_code_scheme.md`, with the following specifics:
+- **Logic:** For each such transaction, derive VAT code and treatment from Category + Geography using the rules in `docs/scheme/vat_code_scheme_temporary.md`, with the following specifics:
   - **FXE, PAS, REF:** Do not depend on geography. Use VAT code = `FXE`, `PAS`, or `REF`; Geography column = empty string; Treatment = EXM, OOS, or OOS respectively.
   - **PUR + EX:** Define as **PUR-EX** with treatment **RC** (PUR-EX-RC).
   - **All other Category + Geography combinations:** As in the scheme (e.g. FLT-NL, NFT-EU, PUR-NL, etc.). Geography column = the geography code (NL, EU, EX, XX, or UNKNOWN).
@@ -114,7 +114,7 @@ Produce two temporary CSVs, both sorted by GL account number.
 
 ## 7. GL Category Lookup (One-Time Creation)
 
-- **Source of truth:** `docs/vat_code_scheme.md` (section “GL Account → Category Mapping”).
+- **Source of truth:** `docs/scheme/vat_code_scheme_temporary.md` (section “GL Account → Category Mapping”).
 - **Output:** `data/gl_category_lookup.csv` (flat list: one row per GL code).
 - **Method:** Expand all ranges and patterns (e.g. 72114–72149, 8112–8114, 4xxx) into individual GL codes. Use `data/Acount ledger.csv` (or an agreed list) to resolve which codes exist for ranges like 4xxx. Save under `data/` so the script can load it in Step 1.
 - **Columns (minimal):** `gl_account_code`, `category` (and optionally GL name if useful).

@@ -35,7 +35,7 @@
 ### 2.2 GL category lookup
 
 - **PRD expects:** `data/gl_category_lookup.csv` with at least `gl_account_code`, `category`.
-- **Actual:** File **does not exist**. It must be **created once** from `docs/vat_code_scheme.md` (Section 7 of PRD), with ranges (72114–72149, 8112–8114, 4xxx) expanded using `data/Acount ledger.csv`.
+- **Actual:** File **does not exist**. It must be **created once** from `docs/scheme/vat_code_scheme_temporary.md` (Section 7 of PRD), with ranges (72114–72149, 8112–8114, 4xxx) expanded using `data/Acount ledger.csv`.
 - **Verdict:** **Missing.** Create this file (or a one-off script that generates it) before running the main pipeline. Blocking for Step 1.
 
 ### 2.3 Invoicees overview
@@ -74,7 +74,7 @@
 ## 4. What Must Exist Before Coding / First Run
 
 1. **Create `data/gl_category_lookup.csv`**  
-   One-off: parse `docs/vat_code_scheme.md` GL→Category mapping, expand ranges (72114–72149, 8112–8114, 4xxx) using codes from `data/Acount ledger.csv`, output flat list with columns e.g. `gl_account_code`, `category`. Optionally add a small script `app/build_gl_lookup.py` (or in `scripts/`) so the lookup can be regenerated when the scheme changes.
+   One-off: parse `docs/scheme/vat_code_scheme_temporary.md` GL→Category mapping, expand ranges (72114–72149, 8112–8114, 4xxx) using codes from `data/Acount ledger.csv`, output flat list with columns e.g. `gl_account_code`, `category`. Optionally add a small script `app/build_gl_lookup.py` (or in `scripts/`) so the lookup can be regenerated when the scheme changes.
 
 2. **Create `app/` and modules**  
    As per PRD Section 12: `geography.py`, `gl_category.py`, `vat_code.py`, plus an entry point (e.g. `main.py` or CLI). Create `tmp/` when writing outputs (or document that the script creates it).

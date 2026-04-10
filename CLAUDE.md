@@ -37,9 +37,14 @@ For `financial_period` filtering:
 | `data/vat_code_box_icp_lookup.csv` | VAT code to Box/ICP mapping |
 | `data/*_invoicees_overview.csv` | Customer VAT validity lookup |
 | `data/gl_margin_lookup.csv` | GL code to Margin mapping |
-| `docs/vat_code_scheme.md` | VAT code algorithm (source of truth) |
+| `docs/scheme/vat_code_scheme_temporary.md` | VAT code algorithm (source of truth) |
 
 ## Critical Business Rules
+
+### One GL Account = One VAT Code
+- Each GL account must map to **exactly one VAT code** — never mix multiple VAT codes on a single GL account
+- This is fundamental: GL accounts are the primary input for determining the VAT code (Category), so a 1:1 mapping must be maintained
+- If any proposed change would result in one GL account mapping to multiple VAT codes, **stop and notify the user** before proceeding
 
 ### ICP and VAT Validity
 - **Only customers with valid EU VAT numbers** qualify for ICP (Box 3B)

@@ -1,5 +1,7 @@
 ## Key Business Rules Summary for assigning VAT codes to transactions
 
+> **Note:** The VAT codes shown below are the current numeric codes configured in Exact Online (e.g. 2, 6, 8, 20, 95, 100, 101, 102). These will be replaced by three-character alphanumeric codes (e.g. FLN, NFE, PAN) as defined in [exact_vat_codes.md](exact_vat_codes.md).
+
 ### Revenue Transactions (GL 8xxx)
 
 | Customer Location | Margin Account | VAT Code in Exact Online | Return Box |
