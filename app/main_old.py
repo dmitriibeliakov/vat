@@ -187,16 +187,21 @@ def get_margin(gl_code: str, margin_lookup: dict[str, str]) -> str:
     return ""
 
 
-def get_box(vat_code: str, margin: str, gl_code: str, vat_type: str = "") -> str:
+def get_box(
+    vat_code: str, margin: str, gl_code: str, vat_type: str = "", country_code: str = ""
+) -> str:
     """
     Determine Box for a transaction based on VAT code, Margin, GL type, and VAT type.
 
     Logic from docs/legacy/OLD_VAT_Margin_Box_Logic.md and PRD.
     vat_type "I" = Input/purchase (VAT deductible), used for Box 5B determination.
+    country_code is only used to resolve PAS on a Margin-classified GL (see below) -
+    everything else is decided by vat_code/margin/gl_code alone.
     """
     vc = _normalize_vat_code(vat_code)
     gl = _normalize_gl_code(gl_code)
     vt = str(vat_type).strip().upper() if vat_type and pd.notna(vat_type) else ""
+    cc = str(country_code).strip().upper() if country_code and pd.notna(country_code) else ""
 
     if not vc:
         return ""
@@ -271,10 +276,24 @@ def get_box(vat_code: str, margin: str, gl_code: str, vat_type: str = "") -> str
         # Reverse charge: intra-EU B2B non-flight services, customer self-accounts
         return "3B"  # ICP
 
-    if vc in ("NWW", "FWW", "PAS"):
-        # Out of scope: non-EU sales and pass-through transactions - not
-        # reported on the Dutch VAT return at all
+    if vc in ("NWW", "FWW"):
+        # Out of scope: non-EU margin sales - not reported on the Dutch VAT return
         return ""
+
+    if vc == "PAS":
+        # PAS = "paid on behalf of customer". The cost leg (non-Margin GL, e.g.
+        # gross Turnover) is genuinely out of scope regardless of country. But
+        # Exact also tags the paired commission/markup leg (Margin GL, e.g.
+        # Commission Hotels) as PAS, which is wrong - a markup was earned and
+        # is taxable. For a Margin GL, resolve the box from customer country
+        # instead of trusting the PAS tag (confirmed with Dima 2026-07-13).
+        if margin != "Margin":
+            return ""  # cost leg: genuinely out of scope
+        if cc == "NL":
+            return "1A"
+        if cc in EU_COUNTRY_CODES:
+            return "3B"  # ICP; downgraded to 1E below if VAT is invalid/unknown
+        return ""  # non-EU or unknown customer: out of scope, like NWW
 
     if vc == "FIN":
         # Exempt: payment method fees (Ecommpay, Amex). In scope for VAT but
@@ -576,32 +595,35 @@ def build_pivot(
     # Normalize vat_type
     df["vat_type_norm"] = df["vat_type"].fillna("").astype(str).str.strip().str.upper()
 
-    # Assign original Box (before VAT validity adjustment)
-    df["original_box"] = df.apply(
-        lambda row: get_box(row["VAT_code"], row["Margin"], row["GL_code"], row["vat_type_norm"]),
-        axis=1
-    )
-
-    # Enrich with VAT validity if lookup provided
+    # Enrich with VAT validity/country if lookup provided. Done before Box
+    # assignment because get_box() needs customer country to resolve PAS on a
+    # Margin GL (see get_box docstring).
     if vat_lookup:
         df = enrich_with_vat_validity(df, vat_lookup)
-
-        # Adjust box for invalid VAT
-        df["Box"] = df.apply(
-            lambda row: get_adjusted_box(
-                row["original_box"],
-                row["vat_valid"],
-                row["country_code_lookup"]
-            ),
-            axis=1
-        )
     else:
-        # No VAT lookup - use original box
-        df["Box"] = df["original_box"]
         df["vat_valid"] = True
         df["vat_number_lookup"] = "n/a"
         df["country_lookup"] = "Unknown"
         df["country_code_lookup"] = ""
+
+    # Assign original Box (before VAT validity adjustment)
+    df["original_box"] = df.apply(
+        lambda row: get_box(
+            row["VAT_code"], row["Margin"], row["GL_code"], row["vat_type_norm"],
+            row["country_code_lookup"],
+        ),
+        axis=1
+    )
+
+    # Adjust box for invalid VAT (3B -> 1E)
+    df["Box"] = df.apply(
+        lambda row: get_adjusted_box(
+            row["original_box"],
+            row["vat_valid"],
+            row["country_code_lookup"]
+        ),
+        axis=1
+    )
 
     # Group by VAT code, VAT description, GL code, GL description, Margin, Box
     agg = (
