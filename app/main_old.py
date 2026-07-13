@@ -93,6 +93,31 @@ def load_margin_lookup(path: Path) -> dict[str, str]:
     return lookup
 
 
+def load_gl_category_lookup(path: Path) -> dict[str, str]:
+    """
+    Load GL code → product category from data/gl_category_lookup.csv.
+
+    Categories: FLT (flight margin/commission), NFT (non-flight margin/
+    commission), PAS (pass-through cost/turnover), PUR (purchase/expense),
+    FXE (FX markup, treated as exempt), REF (refund).
+
+    This is the source of truth for Box assignment (see get_box) - Exact's
+    vat_code field is not trusted for this, since it can be inconsistent or
+    stale during a VAT-scheme migration (confirmed with Dima 2026-07-13).
+    """
+    lookup: dict[str, str] = {}
+    if not path.exists():
+        return lookup
+    with path.open(newline="", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            gl_code = (row.get("gl_account_code") or "").strip()
+            category = (row.get("category") or "").strip()
+            if gl_code:
+                lookup[gl_code] = category
+    return lookup
+
+
 def load_vat_validity_lookup(path: Path) -> dict[str, dict]:
     """
     Load account_code → VAT validity info from invoicees_overview.csv.
@@ -188,20 +213,52 @@ def get_margin(gl_code: str, margin_lookup: dict[str, str]) -> str:
 
 
 def get_box(
-    vat_code: str, margin: str, gl_code: str, vat_type: str = "", country_code: str = ""
+    vat_code: str,
+    margin: str,
+    gl_code: str,
+    vat_type: str = "",
+    country_code: str = "",
+    category: str = "",
 ) -> str:
     """
-    Determine Box for a transaction based on VAT code, Margin, GL type, and VAT type.
+    Determine Box for a transaction.
 
-    Logic from docs/legacy/OLD_VAT_Margin_Box_Logic.md and PRD.
-    vat_type "I" = Input/purchase (VAT deductible), used for Box 5B determination.
-    country_code is only used to resolve PAS on a Margin-classified GL (see below) -
-    everything else is decided by vat_code/margin/gl_code alone.
+    For any GL categorized FLT/NFT/PAS/FXE/REF in gl_category_lookup.csv, the
+    box is derived from category + customer country alone - Exact's vat_code
+    is NOT trusted for the sales side, since it can be inconsistent or stale
+    during a VAT-scheme migration (confirmed with Dima 2026-07-13):
+      - FLT (flight margin/commission): always in scope, 1E if the customer
+        is NL/EU (international passenger transport is zero-rated regardless
+        of B2B status - para 6.2 ruling), out of scope if outside the EU.
+      - NFT (non-flight margin/commission): 1A if NL, 3B if EU (subject to
+        the invalid-VAT downgrade to 1E below), out of scope if outside the EU.
+      - PAS (pass-through cost/turnover), FXE (FX markup, exempt), REF
+        (refund): always out of scope, regardless of vat_code or country.
+    GLs categorized PUR (purchase/expense) or not found in the category
+    lookup fall through to the legacy vat_code-driven logic below - that
+    covers the purchase side (4A/4B/5B) and acts as a safety net for any
+    margin GL not yet added to gl_category_lookup.csv.
     """
     vc = _normalize_vat_code(vat_code)
     gl = _normalize_gl_code(gl_code)
     vt = str(vat_type).strip().upper() if vat_type and pd.notna(vat_type) else ""
     cc = str(country_code).strip().upper() if country_code and pd.notna(country_code) else ""
+    cat = str(category).strip().upper() if category and pd.notna(category) else ""
+
+    is_nl_or_eu = cc == "NL" or cc in EU_COUNTRY_CODES
+
+    if cat == "FLT":
+        return "1E" if is_nl_or_eu else ""
+
+    if cat == "NFT":
+        if cc == "NL":
+            return "1A"
+        if cc in EU_COUNTRY_CODES:
+            return "3B"  # ICP; downgraded to 1E below if VAT is invalid/unknown
+        return ""
+
+    if cat in ("PAS", "FXE", "REF"):
+        return ""
 
     if not vc:
         return ""
@@ -557,6 +614,7 @@ def build_pivot(
     df: pd.DataFrame,
     margin_lookup: dict[str, str],
     vat_lookup: dict[str, dict] | None = None,
+    category_lookup: dict[str, str] | None = None,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     """
     Build VAT pivot with Margin and Box assigned, handling VAT validity.
@@ -592,6 +650,11 @@ def build_pivot(
     # Assign Margin
     df["Margin"] = df["GL_code"].apply(lambda gl: get_margin(gl, margin_lookup))
 
+    # Assign Category (FLT/NFT/PAS/PUR/FXE/REF) - source of truth for Box on
+    # the sales side, see get_box docstring
+    category_lookup = category_lookup or {}
+    df["Category"] = df["GL_code"].apply(lambda gl: category_lookup.get(gl, ""))
+
     # Normalize vat_type
     df["vat_type_norm"] = df["vat_type"].fillna("").astype(str).str.strip().str.upper()
 
@@ -610,7 +673,7 @@ def build_pivot(
     df["original_box"] = df.apply(
         lambda row: get_box(
             row["VAT_code"], row["Margin"], row["GL_code"], row["vat_type_norm"],
-            row["country_code_lookup"],
+            row["country_code_lookup"], row["Category"],
         ),
         axis=1
     )
@@ -827,6 +890,15 @@ def main() -> int:
         margin_lookup = load_margin_lookup(margin_lookup_path)
         print(f"Loaded {len(margin_lookup)} GL codes from margin lookup")
 
+    # Load GL category lookup (source of truth for sales-side Box assignment)
+    category_lookup_path = args.data_dir / "gl_category_lookup.csv"
+    if not category_lookup_path.exists():
+        print(f"Warning: GL category lookup not found: {category_lookup_path}", file=sys.stderr)
+        category_lookup = {}
+    else:
+        category_lookup = load_gl_category_lookup(category_lookup_path)
+        print(f"Loaded {len(category_lookup)} GL codes from category lookup")
+
     # Load VAT validity lookup
     vat_lookup: dict[str, dict] = {}
     invoicees_path = args.invoicees
@@ -869,7 +941,22 @@ def main() -> int:
     print(f"Loaded {len(df)} filtered transaction lines")
 
     # Build pivot with VAT validity handling
-    pivot, enriched_df = build_pivot(df, margin_lookup, vat_lookup)
+    pivot, enriched_df = build_pivot(df, margin_lookup, vat_lookup, category_lookup)
+
+    # Safety net: warn about Margin-classified GLs missing from the category
+    # lookup - they fall through to the legacy vat_code-driven Box logic
+    # instead of the category+geography rule, which may be wrong.
+    uncategorized_mask = (enriched_df["Margin"] == "Margin") & (enriched_df["Category"] == "")
+    uncategorized_margin_gls = sorted(
+        set(zip(enriched_df.loc[uncategorized_mask, "GL_code"], enriched_df.loc[uncategorized_mask, "GL_description"]))
+    )
+    if uncategorized_margin_gls:
+        print(
+            f"Warning: {len(uncategorized_margin_gls)} Margin-classified GL(s) missing from "
+            f"gl_category_lookup.csv, falling back to legacy vat_code Box logic: "
+            f"{uncategorized_margin_gls}",
+            file=sys.stderr,
+        )
 
     # Save pivot as XLSX
     pivot.to_excel(pivot_path, index=False, engine='openpyxl')

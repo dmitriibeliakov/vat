@@ -166,3 +166,11 @@ gl_account_code,category,gl_name
 8204,PAS,Payment method fees ancillary services NL
 8214,PAS,Payment method fees ancillary services EU
 8224,PAS,Payment method fees ancillary services outside EU
+80001,PAS,Turnover flights
+80002,PAS,Turnover Hotels
+80003,PAS,Turnover Other Products
+81001,FLT,Markup Flights
+81002,NFT,Markup Hotels
+81003,NFT,Markup Other Products
+82002,NFT,Commission Hotels
+80131,FLT,IATA Comission ADMA NL
