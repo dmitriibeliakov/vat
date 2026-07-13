@@ -169,19 +169,22 @@ def load_vat_validity_lookup(path: Path) -> dict[str, dict]:
             "name": name,
         }
 
-    # C Teleport AS (account 34) is our Latvian sister company.  It doesn't
-    # appear in the invoicees overview because that view only contains
-    # customers, and C Teleport AS is an intercompany counterparty.  We
-    # hardcode it here so its transactions get the correct EU geography
-    # (valid VAT → Box 3B) instead of being reclassified to 1E.
-    if "34" not in lookup:
-        lookup["34"] = {
-            "valid_eu_vat": True,
-            "vat_number": "LV40203039827",
-            "country": "Latvia",
-            "country_code": "LV",
-            "name": "C Teleport AS",
-        }
+    # C Teleport AS is our Latvian sister company.  It doesn't appear in the
+    # invoicees overview because that view only contains customers, and
+    # C Teleport AS is an intercompany counterparty.  We hardcode it here so
+    # its transactions get the correct EU geography (valid VAT -> Box
+    # 3B/1E) instead of being dropped as unknown-country.  It's booked under
+    # two account codes in Exact - "34" and "442" - confirmed with Dima
+    # 2026-07-13 that both are the same Latvian entity.
+    for account_code in ("34", "442"):
+        if account_code not in lookup:
+            lookup[account_code] = {
+                "valid_eu_vat": True,
+                "vat_number": "LV40203039827",
+                "country": "Latvia",
+                "country_code": "LV",
+                "name": "C Teleport AS",
+            }
 
     return lookup
 
