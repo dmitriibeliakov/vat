@@ -1,6 +1,6 @@
 """
 VAT code and treatment from Category + Geography.
-Implements the scheme matrix (docs/vat_code_scheme.md). VAT code format: two dashes
+Implements the scheme matrix (docs/scheme/vat_code_scheme_temporary.md). VAT code format: two dashes
 (category-geography-treatment), e.g. FLT-NL-0, FXE--EXM, PUR-EX-RC.
 """
 

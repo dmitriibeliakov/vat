@@ -8,6 +8,9 @@ gl_code,gl_description,margin
 8090,Platform subscription fee,Margin
 8091,Minimum booking fee,Margin
 8100,Markup Marine,Margin
+81001,Markup Flights,Margin
+81002,Markup Hotels,Margin
+81003,Markup Other Products,Margin
 8101,Markup Corporate,Margin
 8104,Class drops Marine,Margin
 8105,Class drops Corporate,Margin
@@ -18,6 +21,7 @@ gl_code,gl_description,margin
 8203,FX markup ancillary services NL Corporate,Margin
 8205,Commissions ancillary services NL Corporate,Margin
 8206,Commission Hotels (online),Margin
+82002,Commission Hotels,Margin
 8212,Mark up ancillary services EU Corporate,Margin
 8213,FX markup ancillary services EU Corporate,Margin
 8222,Mark up ancillary services outside EU Corporate,Margin

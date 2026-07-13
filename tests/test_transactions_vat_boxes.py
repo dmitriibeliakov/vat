@@ -1,7 +1,7 @@
 """
 Tests for VAT box assignment on transactions_with_vat_code.csv.
 
-Per docs/vat_code_scheme.md, PUR (purchases, 4xxx) must appear in box 5B.
+Per docs/scheme/vat_code_scheme_temporary.md, PUR (purchases, 4xxx) must appear in box 5B.
 """
 
 import pandas as pd
@@ -37,7 +37,7 @@ def test_account_4020_in_box_5b(transactions):
     """
     All transactions with GL account 4020 must be assigned to box 5B.
 
-    Per docs/vat_code_scheme.md: PUR (4xxx) → box 5B.
+    Per docs/scheme/vat_code_scheme_temporary.md: PUR (4xxx) → box 5B.
     """
     gl = _normalize_account_code(transactions["gl_account_code"])
     gl_norm = _normalize_account_code(transactions["gl_account_code_norm"])

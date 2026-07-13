@@ -2,7 +2,7 @@
 
 ## Overview
 
-Enhance `app/main_old.py` to automatically assign **Margin** and **Box** columns based on the logic documented in `docs/OLD_VAT_Margin_Box_Logic.md`. This script processes 2025 and earlier quarterly VAT raw transaction lines CSV using original Exact Online VAT codes.
+Enhance `app/main_old.py` to automatically assign **Margin** and **Box** columns based on the logic documented in `docs/legacy/OLD_VAT_Margin_Box_Logic.md`. This script processes 2025 and earlier quarterly VAT raw transaction lines CSV using original Exact Online VAT codes.
 
 ## Current State
 

@@ -15,4 +15,4 @@ Note about VAT validation statusses:
 - **NotSupported** invoicee’s ‘No Vat’ is set to false, but the VAT number is not supported by the service for validation.
 - **NotApplicable** invoicee’s  ‘No Vat’  is set to true.
 
-`data/Coutnerparty country.csv` - Counterparty country export from Pigment. Explains which country belongs to Europe. This is used to create the ICP report and VAT report box 3b as explained in the [Pivot transactions to VAT and ICP](../docs/Pivot%20transactions%20to%20VAT%20and%20ICP.md) document.
+`data/Coutnerparty country.csv` - Counterparty country export from Pigment. Explains which country belongs to Europe. This is used to create the ICP report and VAT report box 3b as explained in the [Pivot transactions to VAT and ICP](Pivot%20transactions%20to%20VAT%20and%20ICP.md) document.

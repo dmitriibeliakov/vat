@@ -98,7 +98,7 @@ From a user perspective, the standard quarterly flow looks like this:
    - Save the result as a CSV (e.g. `YYYYMMDD_transaction_lines_Q{N}.csv`) into the project root.
 
 2. **Refresh lookup CSVs (if needed)**  
-   - Update the files in `data/` from their source systems following `docs/reference files.md`:
+   - Update the files in `data/` from their source systems following `docs/process/reference files.md`:
      - GL ledger and GL classification from Exact Online (`Master data` → `Import/Export`).
      - Invoicees overview from Exact Online (includes `vat_status` values like `Valid`, `Invalid`, `NotApplicable`, etc.).
      - Counterparty country list from Pigment, used to decide whether a transaction is NL, EU, or non‑EU.
