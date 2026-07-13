@@ -53,16 +53,52 @@ drafted `FXX`/`NXX`/`CUR`/`REF`).
 Codes with no box in this table (`NWW`, `FWW`, `PAS`, `FIN`) are intentionally
 excluded from the VAT return per the Out-of-Scope / Exempt treatment above.
 
-## Implementation
+## Implementation: GL category, not `vat_code`, decides the sales-side box
 
-`app/main_old.py`'s `get_box()` implements this mapping for the new codes
-(added 2026-07-13, alongside the pre-existing numeric-code logic used for
-2025-and-earlier data and the early part of Q2 2026). Unlike the old numeric
-codes, box assignment for the new codes depends only on `vat_code` — no
-GL-based Margin lookup is needed, since the new codes are category-specific
-by construction.
+The table above documents Exact's *intended* code scheme, but as of
+2026-07-13 the actual `vat_code` values in the data were found to be
+unreliable — e.g. the `82002` Commission Hotels GL (a real, taxable
+markup) was being tagged `PAS` for every single transaction, including NL
+customers, wrongly excluding it from the VAT return entirely (found while
+investigating why Box 1A dropped in Q2). Confirmed with Dima: **don't use
+Exact's `vat_code` to determine the sales-side box at all.** Instead:
 
-One known gap carried over from the old logic, not fixed here: `build_vat_declaration()`
-applies a flat 21% VAT rate to any box ending in "A" or "B", including `UN9`
-(9% reduced rate, rare/low materiality) landing in Box 5B. Needs a rate-aware
-fix if `UN9` volume grows.
+1. **Margin or cost?** Source: `data/gl_category_lookup.csv`, keyed by GL
+   account (Exact's stable chart of accounts, not the more volatile
+   `vat_code` text). Categories: `FLT` (flight margin/commission), `NFT`
+   (non-flight margin/commission), `PAS` (pass-through cost/turnover),
+   `PUR` (purchase/expense), `FXE` (FX markup, treated as exempt), `REF`
+   (refund).
+2. **If margin (`FLT`/`NFT`), flight or not?** Flight margin (`FLT`) is
+   *always* 1E for NL/EU customers — international passenger transport is
+   zero-rated per paragraph 6.2 regardless of B2B status, not standard
+   reverse charge — and out of scope for non-EU customers. Non-flight
+   margin (`NFT`) follows the usual split: 1A if NL, 3B if EU (subject to
+   the existing invalid-VAT downgrade to 1E), out of scope otherwise.
+3. **If cost/exempt/refund (`PAS`/`FXE`/`REF`):** always out of scope,
+   regardless of `vat_code` or customer country.
+
+This is implemented in `get_box()` in `app/main_old.py`, checking category
+before ever looking at `vat_code`. GLs categorized `PUR` (the purchase
+side - 4A/4B/5B) or missing from `gl_category_lookup.csv` fall through to
+the legacy `vat_code`-driven logic below, which acts as a safety net -
+`main()` prints a warning if any Margin-classified GL is missing from the
+category lookup.
+
+**Impact**: this reclassifies most flight margin to EU B2B customers from
+Box 3B (reverse charge, ICP-reported) to Box 1E (zero-rated, not ICP) -
+a large swing, not a business change. Applied from Q2 2026 onward only;
+**Q1 2026 was already filed under the old vat_code-driven treatment and
+was deliberately left unchanged** (see `output/VAT final report Q1'26.xlsx`).
+
+The old `vat_code`-driven sales logic (numeric codes 2/6/8/20/95/100/101/102,
+and the new letter codes FEU/FWW/NEU/NEX/NNL/PAS/NWW documented above) is
+still present in `get_box()` as that fallback path, not deleted - it's what
+produced the filed Q1'26 numbers and is still exercised for the purchase
+side and any uncategorized GL.
+
+## Known gap, not fixed here
+
+`build_vat_declaration()` applies a flat 21% VAT rate to any box ending in
+"A" or "B", including `UN9` (9% reduced rate) landing in Box 5B. Low
+materiality currently but needs a rate-aware fix if `UN9` volume grows.
