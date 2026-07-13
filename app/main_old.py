@@ -874,6 +874,17 @@ def main() -> int:
         default=None,
         help="Override data year (e.g. 2026 or 26). If omitted, inferred from filename.",
     )
+    parser.add_argument(
+        "--legacy-vat-code-box",
+        action="store_true",
+        help=(
+            "Use the old vat_code-driven Box logic for the sales side (same "
+            "methodology as Q1 2026 and earlier - trusts Exact's vat_code), "
+            "instead of the GL-category-based logic used from Q2 2026 onward. "
+            "Use this to file a quarter under the old treatment for filing "
+            "consistency, even though the category-based logic is more correct."
+        ),
+    )
     args = parser.parse_args()
 
     input_path = args.input_csv
@@ -890,14 +901,18 @@ def main() -> int:
         margin_lookup = load_margin_lookup(margin_lookup_path)
         print(f"Loaded {len(margin_lookup)} GL codes from margin lookup")
 
-    # Load GL category lookup (source of truth for sales-side Box assignment)
-    category_lookup_path = args.data_dir / "gl_category_lookup.csv"
-    if not category_lookup_path.exists():
-        print(f"Warning: GL category lookup not found: {category_lookup_path}", file=sys.stderr)
-        category_lookup = {}
+    # Load GL category lookup (source of truth for sales-side Box assignment,
+    # unless --legacy-vat-code-box asks to trust Exact's vat_code instead)
+    category_lookup: dict[str, str] = {}
+    if args.legacy_vat_code_box:
+        print("Using legacy vat_code-driven Box logic (--legacy-vat-code-box)")
     else:
-        category_lookup = load_gl_category_lookup(category_lookup_path)
-        print(f"Loaded {len(category_lookup)} GL codes from category lookup")
+        category_lookup_path = args.data_dir / "gl_category_lookup.csv"
+        if not category_lookup_path.exists():
+            print(f"Warning: GL category lookup not found: {category_lookup_path}", file=sys.stderr)
+        else:
+            category_lookup = load_gl_category_lookup(category_lookup_path)
+            print(f"Loaded {len(category_lookup)} GL codes from category lookup")
 
     # Load VAT validity lookup
     vat_lookup: dict[str, dict] = {}
@@ -945,18 +960,20 @@ def main() -> int:
 
     # Safety net: warn about Margin-classified GLs missing from the category
     # lookup - they fall through to the legacy vat_code-driven Box logic
-    # instead of the category+geography rule, which may be wrong.
-    uncategorized_mask = (enriched_df["Margin"] == "Margin") & (enriched_df["Category"] == "")
-    uncategorized_margin_gls = sorted(
-        set(zip(enriched_df.loc[uncategorized_mask, "GL_code"], enriched_df.loc[uncategorized_mask, "GL_description"]))
-    )
-    if uncategorized_margin_gls:
-        print(
-            f"Warning: {len(uncategorized_margin_gls)} Margin-classified GL(s) missing from "
-            f"gl_category_lookup.csv, falling back to legacy vat_code Box logic: "
-            f"{uncategorized_margin_gls}",
-            file=sys.stderr,
+    # instead of the category+geography rule, which may be wrong. Skipped
+    # under --legacy-vat-code-box, where that fallback is the whole point.
+    if not args.legacy_vat_code_box:
+        uncategorized_mask = (enriched_df["Margin"] == "Margin") & (enriched_df["Category"] == "")
+        uncategorized_margin_gls = sorted(
+            set(zip(enriched_df.loc[uncategorized_mask, "GL_code"], enriched_df.loc[uncategorized_mask, "GL_description"]))
         )
+        if uncategorized_margin_gls:
+            print(
+                f"Warning: {len(uncategorized_margin_gls)} Margin-classified GL(s) missing from "
+                f"gl_category_lookup.csv, falling back to legacy vat_code Box logic: "
+                f"{uncategorized_margin_gls}",
+                file=sys.stderr,
+            )
 
     # Save pivot as XLSX
     pivot.to_excel(pivot_path, index=False, engine='openpyxl')
