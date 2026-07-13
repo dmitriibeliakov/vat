@@ -8,6 +8,9 @@ gl_code,gl_description,margin
 8090,Platform subscription fee,Margin
 8091,Minimum booking fee,Margin
 8100,Markup Marine,Margin
+81001,Markup Flights,Margin
+81002,Markup Hotels,Margin
+81003,Markup Other Products,Margin
 8101,Markup Corporate,Margin
 8104,Class drops Marine,Margin
 8105,Class drops Corporate,Margin

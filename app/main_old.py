@@ -1,16 +1,24 @@
 #!/usr/bin/env python3
 """
-Legacy VAT report script: raw transaction CSV → pivot with auto-assigned Box/Margin.
+VAT report script using the OLD VAT code scheme (2025 and earlier).
 
-Implements docs/PRD main_old VAT script.md:
+Key difference from main.py: this script determines VAT treatment from the
+**existing Exact Online VAT codes** combined with a GL-account-based Margin
+lookup (Margin vs non-Margin).  The newer main.py derives VAT treatment
+entirely from a **GL-account → Category** mapping (FLT, NFT, PUR, …) and
+counterparty geography, ignoring the legacy Exact VAT codes.
+
+Pipeline:
 1. Load raw transaction lines CSV (e.g. 20260129_transaction_lines_Q3.csv).
 2. Filter out lines where VAT code is blank or "0" / "No VAT".
-3. Assign Margin based on GL account (from lookup).
+3. Assign Margin based on GL account (from gl_margin_lookup.csv).
 4. Assign Box based on VAT code + Margin + GL type.
 5. Build pivot: VAT code, VAT description, GL code, GL description, Margin, Box,
    Amount sum, Transaction count.
+6. Generate ICP report (EU B2B, Box 3B) and VAT declaration summary.
 
-Applies to 2025 and earlier quarterly data. For 2026+, use app/main.py.
+Outputs XLSX files to output/ folder.
+Applies to 2025 and earlier quarterly data.  For 2026+ use app/main.py.
 """
 
 from __future__ import annotations
@@ -76,8 +84,10 @@ def load_margin_lookup(path: Path) -> dict[str, str]:
     with path.open(newline="", encoding="utf-8") as f:
         reader = csv.DictReader(f)
         for row in reader:
-            gl_code = (row.get("gl_code") or "").strip()
-            margin = (row.get("margin") or "").strip()
+            # Strip keys to handle padded CSV headers (e.g. " margin" → "margin")
+            trimmed = {k.strip(): v for k, v in row.items()}
+            gl_code = (trimmed.get("gl_code") or "").strip()
+            margin = (trimmed.get("margin") or "").strip()
             if gl_code:
                 lookup[gl_code] = margin
     return lookup
@@ -132,6 +142,20 @@ def load_vat_validity_lookup(path: Path) -> dict[str, dict]:
             "country": country,
             "country_code": country_code,
             "name": name,
+        }
+
+    # C Teleport AS (account 34) is our Latvian sister company.  It doesn't
+    # appear in the invoicees overview because that view only contains
+    # customers, and C Teleport AS is an intercompany counterparty.  We
+    # hardcode it here so its transactions get the correct EU geography
+    # (valid VAT → Box 3B) instead of being reclassified to 1E.
+    if "34" not in lookup:
+        lookup["34"] = {
+            "valid_eu_vat": True,
+            "vat_number": "LV40203039827",
+            "country": "Latvia",
+            "country_code": "LV",
+            "name": "C Teleport AS",
         }
 
     return lookup
@@ -227,6 +251,36 @@ def get_box(vat_code: str, margin: str, gl_code: str, vat_type: str = "") -> str
         # Commission Non EU - outside EU
         return ""
 
+    # New 3-letter VAT codes (rolled out by Exact Online in the last weeks of
+    # Q2 2026, alongside the old numeric codes above during the transition).
+    # Mapping is per Dima's Airtable VAT scheme (source of truth):
+    # https://airtable.com/appPG8qsc6I48lDDX/tblejwp9mhwjrCcb8/viwFWUWmFYuXytJGy
+    # Unlike the old numeric codes, the new codes are category-specific by
+    # construction, so the box follows from vat_code alone (no margin check).
+    if vc == "NNL":
+        # Domestic supplies 21% (default NL rate)
+        return "1A"
+
+    if vc in ("FEU", "NEX"):
+        # 0% VAT: flight margin to EU non-NL companies (FEU, para 6.2 ruling -
+        # international passenger transport is zero-rated regardless of VAT
+        # status) and non-flight margin EU-no-VAT customers (NEX, pseudo-zero)
+        return "1E"
+
+    if vc == "NEU":
+        # Reverse charge: intra-EU B2B non-flight services, customer self-accounts
+        return "3B"  # ICP
+
+    if vc in ("NWW", "FWW", "PAS"):
+        # Out of scope: non-EU sales and pass-through transactions - not
+        # reported on the Dutch VAT return at all
+        return ""
+
+    if vc == "FIN":
+        # Exempt: payment method fees (Ecommpay, Amex). In scope for VAT but
+        # exemption applied (requires explicit invoice text) - no box.
+        return ""
+
     # Purchase VAT Codes
     # vat_type "I" = Input/purchase (actual cost/asset line, VAT deductible)
     # vat_type "O", "P" = offset/accrual entries (balance sheet, excluded)
@@ -262,6 +316,25 @@ def get_box(vat_code: str, margin: str, gl_code: str, vat_type: str = "") -> str
         # Purchases outside EU
         if is_input_purchase and is_cost_or_asset_gl():
             return "4A, 5B"
+        return ""
+
+    # New 3-letter purchase codes (see note above new sales codes)
+    if vc == "UWW":
+        # Reverse-charged purchases from outside the EU
+        if is_input_purchase:
+            return "4A, 5B"
+        return ""
+
+    if vc == "UEU":
+        # Reverse-charged purchases from EU suppliers
+        if is_input_purchase:
+            return "4B, 5B"
+        return ""
+
+    if vc in ("UNL", "UN9"):
+        # Domestic purchases, 21% (UNL) or reduced 9% (UN9) - deductible input VAT only
+        if is_input_purchase:
+            return "5B"
         return ""
 
     # Unknown VAT code
@@ -385,13 +458,15 @@ def build_icp_report(df: pd.DataFrame, vat_lookup: dict[str, dict]) -> pd.DataFr
     if icp_df.empty:
         return pd.DataFrame(columns=output_columns)
 
-    # Group by account_code
+    # Group by VAT number (not account_code) — ICP report must have one row per
+    # VAT number.  Multiple Exact accounts can share the same VAT number (e.g.
+    # related sub-entities), and the tax authority rejects duplicate VAT numbers.
     agg = (
-        icp_df.groupby("account_code", dropna=False)
+        icp_df.groupby("vat_number_lookup", dropna=False)
         .agg(
             Name=("account_name", "first"),
             Amount=("amount_dc", "sum"),
-            vat_number=("vat_number_lookup", "first"),
+            account_code=("account_code", "first"),
             country=("country_lookup", "first"),
         )
         .reset_index()
@@ -402,7 +477,7 @@ def build_icp_report(df: pd.DataFrame, vat_lookup: dict[str, dict]) -> pd.DataFr
         lambda x: int(float(x)) if pd.notna(x) and str(x).replace(".", "").isdigit() else x
     )
     agg["Round"] = agg["Amount"].round(0).astype(int)
-    agg["Vat number"] = agg["vat_number"]
+    agg["Vat number"] = agg["vat_number_lookup"]
     agg["Country"] = agg["country"]
 
     # Sort by Country, then Name
@@ -556,7 +631,17 @@ def build_vat_declaration(pivot: pd.DataFrame) -> pd.DataFrame:
 
     Aggregates by Box for VAT return filing.
     """
-    output_columns = ["Box", "Turnover", "VAT_amount"]
+    BOX_DESCRIPTIONS = {
+        "1A": "Domestic services at 21% VAT (hotel commissions, SaaS, ancillary markups to NL customers)",
+        "1E": "Zero-rated services (flight intermediation margins; EU services to customers with invalid VAT)",
+        "3B": "EU B2B reverse charge (margins on flights, hotels, ancillaries to EU customers with valid VAT)",
+        "4A, 5B": "Non-EU purchases (reverse charge on imports)",
+        "4B, 5B": "EU purchases (reverse charge on intra-community acquisitions)",
+        "5B": "Domestic purchases (deductible input VAT at 21% or 9%)",
+        "5B Pre-tax": "Total pre-tax base for deductible input VAT (sum of 4A, 4B, 5B)",
+    }
+
+    output_columns = ["Box", "Description", "Turnover", "VAT_amount"]
 
     if pivot.empty:
         return pd.DataFrame(columns=output_columns)
@@ -580,10 +665,10 @@ def build_vat_declaration(pivot: pd.DataFrame) -> pd.DataFrame:
         turnover = row["Turnover"]
         # Check if box ends with 'A' or 'B'
         if box and (box.endswith("A") or box.endswith("B")):
-            return round(abs(turnover) * 0.21, 2)
-        return 0.0
+            return round(abs(turnover) * 0.21)
+        return 0
 
-    agg["VAT_amount"] = agg.apply(calc_vat, axis=1)
+    agg["VAT_amount"] = agg.apply(calc_vat, axis=1).astype(int)
 
     # Round turnover
     agg["Turnover"] = agg["Turnover"].round(0).astype(int)
@@ -597,7 +682,7 @@ def build_vat_declaration(pivot: pd.DataFrame) -> pd.DataFrame:
     pretax_rows = agg[agg["Box"].str.contains("4A|4B|5B", regex=True, na=False)]
     if not pretax_rows.empty:
         pretax_turnover = pretax_rows["Turnover"].sum()
-        pretax_vat = round(abs(pretax_turnover) * 0.21, 2)
+        pretax_vat = round(abs(pretax_turnover) * 0.21)
         pretax_row = pd.DataFrame([{
             "Box": "5B Pre-tax",
             "Turnover": pretax_turnover,
@@ -605,19 +690,27 @@ def build_vat_declaration(pivot: pd.DataFrame) -> pd.DataFrame:
         }])
         agg = pd.concat([agg, pretax_row], ignore_index=True)
 
+    # Add human-readable descriptions
+    agg["Description"] = agg["Box"].map(BOX_DESCRIPTIONS).fillna("")
+
     # Sort by Box
     agg = agg.sort_values("Box").reset_index(drop=True)
 
     return agg[output_columns]
 
 
-def extract_quarter_year(filename: str) -> tuple[str, str]:
+def extract_quarter_year(filename: str, year_override: str | None = None) -> tuple[str, str]:
     """
-    Extract quarter and year from filename.
-    Expects format like: 20260129_transaction_lines_Q3.csv
-    Returns: (quarter, year) e.g., ("Q3", "25")
+    Extract quarter from filename and determine the data year.
 
-    Note: Files dated 2026 contain 2025 data (created in 2026 for previous year).
+    Expects format like: 20260415_transaction_lines_Q1.csv
+    Returns: (quarter, year) e.g., ("Q1", "26")
+
+    The quarter is extracted from the Q{N} in the filename.
+    The year is determined by --year CLI override, or by reading the financial_year
+    from the actual CSV data (done in main()).  Falls back to the filename date prefix
+    minus 1 only for files dated in January (legacy exports created in early Jan for
+    the previous year's Q4).
     """
     import re
 
@@ -628,18 +721,22 @@ def extract_quarter_year(filename: str) -> tuple[str, str]:
     else:
         quarter = "Q1"  # Default
 
-    # For files dated 2026, data is from 2025
-    # For files dated 2025, data is from 2025
-    year_match = re.match(r'(\d{4})', filename)
+    if year_override:
+        year = year_override[-2:]  # Accept "2026" or "26"
+        return quarter, year
+
+    # Fallback: use date prefix from filename
+    year_match = re.match(r'(\d{4})(\d{2})', filename)
     if year_match:
         full_year = year_match.group(1)
-        # If file is dated 2026, it contains 2025 data
-        if full_year == "2026":
-            year = "25"
+        month = year_match.group(2)
+        # If exported in January, likely contains previous year's data
+        if month == "01":
+            year = str(int(full_year) - 1)[-2:]
         else:
-            year = full_year[2:]
+            year = full_year[-2:]
     else:
-        year = "25"  # Default to 2025
+        year = "26"  # Default
 
     return quarter, year
 
@@ -686,6 +783,12 @@ def main() -> int:
         default=Path("output"),
         help="Directory for final XLSX reports (default: output/)",
     )
+    parser.add_argument(
+        "--year",
+        type=str,
+        default=None,
+        help="Override data year (e.g. 2026 or 26). If omitted, inferred from filename.",
+    )
     args = parser.parse_args()
 
     input_path = args.input_csv
@@ -723,7 +826,7 @@ def main() -> int:
     stem = input_path.stem
 
     # Extract quarter and year from filename
-    quarter, year = extract_quarter_year(input_path.name)
+    quarter, year = extract_quarter_year(input_path.name, year_override=args.year)
 
     if args.output is not None:
         pivot_path = args.output
