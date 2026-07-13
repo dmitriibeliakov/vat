@@ -310,8 +310,15 @@ def _is_blank_or_no_vat(row: pd.Series) -> bool:
 
 def load_and_filter(path: Path) -> pd.DataFrame:
     """Read CSV in chunks, keep only required columns, filter out blank/0/No VAT."""
+    # dtype is pinned explicitly (str for text columns, float for amount_dc) to avoid
+    # a pandas chunked-read bug where per-chunk dtype inference mismatches trip an
+    # IndexError inside _concatenate_chunks when concatenating chunks with usecols.
+    dtypes = {c: str for c in REQUIRED_COLUMNS}
+    dtypes["amount_dc"] = float
     chunks = []
-    for chunk in pd.read_csv(path, usecols=REQUIRED_COLUMNS, chunksize=CHUNK_SIZE):
+    for chunk in pd.read_csv(
+        path, usecols=REQUIRED_COLUMNS, dtype=dtypes, chunksize=CHUNK_SIZE
+    ):
         mask = ~chunk.apply(_is_blank_or_no_vat, axis=1)
         chunks.append(chunk.loc[mask])
     if not chunks:
